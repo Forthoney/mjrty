@@ -8,3 +8,8 @@ name = "Mjrty"
 [[lean_exe]]
 name = "mjrty"
 root = "Main"
+
+[[require]]
+name = "Cli"
+scope = "leanprover"
+rev = "v4.28.0"
