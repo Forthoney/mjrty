@@ -7,7 +7,7 @@ In a rewindable sequence,
 the programmer may perform a second pass through the sequence,
 counting the occurences of the element to check if the returned element actually has a majority.
 
-It only depends on equality checks (`DecidabelEq]`) meaning it also works for unhashable types.
+It only depends on equality checks (`DecidabelEq`) meaning it also works for unhashable types.
 
 ## Usage
 The repo contains a library with `List.mjrty` and `Std.Iter.mjrty`.
