@@ -1,4 +1,16 @@
+import Init.Data.Iterators.Lemmas.Consumers.Loop
+
 variable {α} [DecidableEq α]
+
+def mjrtyStep (state : α × Nat) (x : α) :=
+  match state with
+  | (_, 0) => (x, 1)
+  | (candidate, n + 1) =>
+    if x = candidate then
+      (candidate, n + 2)
+    else
+      (candidate, n)
+
 namespace List
 
 def IsMajority (xs : List α) (x : α) : Prop :=
@@ -7,22 +19,12 @@ def IsMajority (xs : List α) (x : α) : Prop :=
 def HasMajority (xs : List α) : Prop :=
   ∃ x, IsMajority xs x
 
-end List
-
-def mjrty [Inhabited α] : List α → α :=
-  go default 0
-  where go (candidate : α) : Nat → List α → α
-    | _, [] => candidate
-    | 0, x :: xs => go x 1 xs
-    | n + 1, x :: xs =>
-      if x = candidate then
-        go candidate (n + 2) xs
-      else
-        go candidate n xs
+def mjrty [Inhabited α] (xs : List α) : α :=
+  xs.foldl mjrtyStep (default, 0) |>.1
 
 theorem mjrty_invariant (xs : List α) (M candidate : α) (n : Nat)
   (h : 2 * xs.count M + (if candidate = M then n else 0) > xs.length + (if candidate ≠ M then n else 0)) :
-  mjrty.go candidate n xs = M := by
+  (xs.foldl mjrtyStep (candidate, n)).1 = M := by
   induction xs generalizing candidate n with
   | nil =>
     by_cases hcand : candidate = M
@@ -31,12 +33,13 @@ theorem mjrty_invariant (xs : List α) (M candidate : α) (n : Nat)
   | cons x xs ih =>
     cases n with
     | zero =>
+      simp only [List.foldl, mjrtyStep]
       apply ih
       grind
     | succ n' =>
       by_cases hx : x = candidate
       <;> by_cases hcand : candidate = M
-      <;> simp [mjrty.go, hx, hcand] at h ⊢
+      <;> simp [List.foldl, mjrtyStep, hx, hcand] at h ⊢
       <;> grind
 
 theorem mjrty_find_majority_if_exists [Inhabited α] :
@@ -52,3 +55,29 @@ theorem mjrty_find_majority_if_exists [Inhabited α] :
     <;> omega
   rw [heq]
   exact hM
+
+end List
+
+namespace Std.Iter
+
+def mjrty [Inhabited α] {σ : Type} [Std.Iterator σ Id α] [Std.IteratorLoop σ Id Id]
+    (it : Std.Iter (α := σ) α) : α :=
+  (it.fold mjrtyStep (default, 0)).1
+
+theorem mjrtyIter_eq_mjrty [Inhabited α] {σ : Type}
+    [Std.Iterator σ Id α] [Std.Iterators.Finite σ Id]
+    [Std.IteratorLoop σ Id Id] [Std.LawfulIteratorLoop σ Id Id]
+    (it : Std.Iter (α := σ) α) :
+    mjrty it = it.toList.mjrty := by
+  simp [mjrty, List.mjrty, Std.Iter.foldl_toList]
+
+theorem mjrtyIter_find_majority_if_exists [Inhabited α] {σ : Type}
+    [Std.Iterator σ Id α] [Std.Iterators.Finite σ Id]
+    [Std.IteratorLoop σ Id Id] [Std.LawfulIteratorLoop σ Id Id]
+    (it : Std.Iter (α := σ) α) :
+    it.toList.HasMajority → it.toList.IsMajority (mjrty it) := by
+  intro hmaj
+  rw [mjrtyIter_eq_mjrty it]
+  exact it.toList.mjrty_find_majority_if_exists hmaj
+
+end Std.Iter
