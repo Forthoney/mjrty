@@ -16,7 +16,7 @@ def runMjrtyCmd (p : Parsed) : IO UInt32 := do
   let s ← stream.readToEnd
   let majority := s.split sep |>.map toString |>.mjrty
   let stdout ← IO.getStdout
-  stdout.putStr majority
+  stdout.putStrLn majority
   return 0
 
 def mjrtyCmd : Cmd := `[Cli|
